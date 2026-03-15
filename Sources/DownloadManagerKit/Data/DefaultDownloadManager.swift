@@ -7,9 +7,9 @@ import Combine
 /// Manages the full lifecycle of file downloads including queuing, progress,
 /// persistence, retry, background sessions, and reactive publishing.
 public final class DefaultDownloadManager: DownloadManaging, @unchecked Sendable {
-
+    
     // MARK: - Dependencies
-
+    
     private let sessionClient: URLSessionDownloadClient
     private let persistence: any DownloadPersisting
     private let networkMonitor: any NetworkMonitoring
@@ -19,9 +19,9 @@ public final class DefaultDownloadManager: DownloadManaging, @unchecked Sendable
     private let diskSpaceManager: any DiskSpaceManaging
     private let checksumValidator: any ChecksumValidating
     private let backgroundSessionIdentifier: String
-
+    
     // MARK: - Serialized State
-
+    
     private let queue = DispatchQueue(label: "com.downloadmanagerkit.manager", qos: .userInitiated)
     private var items: [UUID: DownloadItem] = [:]
     private var taskIdToDownloadId: [Int: UUID] = [:]
@@ -33,23 +33,23 @@ public final class DefaultDownloadManager: DownloadManaging, @unchecked Sendable
     private var networkCancellable: AnyCancellable?
     private var progressContinuations: [UUID: [AsyncStream<DownloadItem>.Continuation]] = [:]
     private var pausedBySystem: Set<UUID> = []
-
+    
     // MARK: - Combine
-
+    
     private let _downloadsSubject = CurrentValueSubject<[DownloadItem], Never>([])
-
+    
     public var downloadsPublisher: AnyPublisher<[DownloadItem], Never> {
         _downloadsSubject.eraseToAnyPublisher()
     }
-
+    
     // MARK: - Background Session Support
-
+    
     /// Set this from your AppDelegate's `handleEventsForBackgroundURLSession` to enable
     /// background session completion.
     public var backgroundCompletionHandler: (() -> Void)?
-
+    
     // MARK: - Init
-
+    
     public init(
         persistence: any DownloadPersisting,
         networkMonitor: any NetworkMonitoring,
@@ -70,14 +70,14 @@ public final class DefaultDownloadManager: DownloadManaging, @unchecked Sendable
         self.backgroundSessionIdentifier = backgroundSessionIdentifier
         self.sessionClient = URLSessionDownloadClient()
     }
-
+    
     deinit {
         sessionClient.invalidateAndCancel()
         networkCancellable?.cancel()
     }
-
+    
     // MARK: - Lifecycle
-
+    
     public func start() async {
         await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
             queue.async { [self] in
@@ -89,9 +89,9 @@ public final class DefaultDownloadManager: DownloadManaging, @unchecked Sendable
             }
         }
     }
-
+    
     // MARK: - Public API
-
+    
     @discardableResult
     public func startDownload(_ request: DownloadRequest) async throws -> UUID {
         try await withCheckedThrowingContinuation { continuation in
@@ -105,7 +105,7 @@ public final class DefaultDownloadManager: DownloadManaging, @unchecked Sendable
             }
         }
     }
-
+    
     public func pauseDownload(id: UUID) async throws {
         await withCheckedContinuation { continuation in
             queue.async { [self] in
@@ -114,7 +114,7 @@ public final class DefaultDownloadManager: DownloadManaging, @unchecked Sendable
             }
         }
     }
-
+    
     public func resumeDownload(id: UUID) async throws {
         await withCheckedContinuation { continuation in
             queue.async { [self] in
@@ -123,7 +123,7 @@ public final class DefaultDownloadManager: DownloadManaging, @unchecked Sendable
             }
         }
     }
-
+    
     public func cancelDownload(id: UUID) async throws {
         await withCheckedContinuation { continuation in
             queue.async { [self] in
@@ -132,7 +132,7 @@ public final class DefaultDownloadManager: DownloadManaging, @unchecked Sendable
             }
         }
     }
-
+    
     public func deleteDownload(id: UUID) async throws {
         await withCheckedContinuation { continuation in
             queue.async { [self] in
@@ -141,7 +141,7 @@ public final class DefaultDownloadManager: DownloadManaging, @unchecked Sendable
             }
         }
     }
-
+    
     public func retryDownload(id: UUID) async throws {
         await withCheckedContinuation { continuation in
             queue.async { [self] in
@@ -150,7 +150,7 @@ public final class DefaultDownloadManager: DownloadManaging, @unchecked Sendable
             }
         }
     }
-
+    
     public func pauseAll() async {
         await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
             queue.async { [self] in
@@ -162,7 +162,7 @@ public final class DefaultDownloadManager: DownloadManaging, @unchecked Sendable
             }
         }
     }
-
+    
     public func resumeAll() async {
         await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
             queue.async { [self] in
@@ -174,7 +174,7 @@ public final class DefaultDownloadManager: DownloadManaging, @unchecked Sendable
             }
         }
     }
-
+    
     public func getDownload(id: UUID) async -> DownloadItem? {
         await withCheckedContinuation { continuation in
             queue.async { [self] in
@@ -182,7 +182,7 @@ public final class DefaultDownloadManager: DownloadManaging, @unchecked Sendable
             }
         }
     }
-
+    
     public func getAllDownloads() async -> [DownloadItem] {
         await withCheckedContinuation { continuation in
             queue.async { [self] in
@@ -190,7 +190,7 @@ public final class DefaultDownloadManager: DownloadManaging, @unchecked Sendable
             }
         }
     }
-
+    
     public func progressStream(for id: UUID) async -> AsyncStream<DownloadItem> {
         AsyncStream { [weak self] continuation in
             guard let self else {
@@ -202,11 +202,11 @@ public final class DefaultDownloadManager: DownloadManaging, @unchecked Sendable
                     self.progressContinuations[id] = []
                 }
                 self.progressContinuations[id]?.append(continuation)
-
+                
                 if let item = self.items[id] {
                     continuation.yield(item)
                 }
-
+                
                 continuation.onTermination = { [weak self] _ in
                     self?.queue.async {
                         self?.progressContinuations[id]?.removeAll { $0 == continuation }
@@ -215,32 +215,42 @@ public final class DefaultDownloadManager: DownloadManaging, @unchecked Sendable
             }
         }
     }
-
+    
     // MARK: - Private: Session Setup
-
+    
     private func createSession() {
         sessionClient.createSession(identifier: backgroundSessionIdentifier)
     }
-
+    
     private func setupCallbacks() {
         sessionClient.onProgress = { [weak self] taskId, bytesWritten, totalWritten, totalExpected in
             self?.queue.async {
                 self?.handleProgress(taskId: taskId, bytesWritten: bytesWritten, totalWritten: totalWritten, totalExpected: totalExpected)
             }
         }
-
+        
+        //        sessionClient.onFinishedDownloading = { [weak self] taskId, location, response in
+        //            self?.queue.async {
+        //                self?.handleFinishedDownloading(taskId: taskId, location: location, response: response)
+        //            }
+        //        }
         sessionClient.onFinishedDownloading = { [weak self] taskId, location, response in
+            // ✅ Copy synchronously here, before queue.async returns control
+            let tempCopy = FileManager.default.temporaryDirectory
+                .appendingPathComponent(UUID().uuidString)
+            try? FileManager.default.copyItem(at: location, to: tempCopy)
+            
             self?.queue.async {
-                self?.handleFinishedDownloading(taskId: taskId, location: location, response: response)
+                self?.handleFinishedDownloading(taskId: taskId, location: tempCopy, response: response)
             }
         }
-
+        
         sessionClient.onTaskComplete = { [weak self] taskId, error in
             self?.queue.async {
                 self?.handleTaskComplete(taskId: taskId, error: error)
             }
         }
-
+        
         sessionClient.onAllEventsFinished = { [weak self] in
             DispatchQueue.main.async {
                 self?.backgroundCompletionHandler?()
@@ -248,9 +258,9 @@ public final class DefaultDownloadManager: DownloadManaging, @unchecked Sendable
             }
         }
     }
-
+    
     // MARK: - Private: Network Observation
-
+    
     private func observeNetwork() {
         networkMonitor.start()
         networkCancellable = networkMonitor.networkStatusPublisher
@@ -260,7 +270,7 @@ public final class DefaultDownloadManager: DownloadManaging, @unchecked Sendable
                 }
             }
     }
-
+    
     private func handleNetworkChange(_ status: NetworkStatus) {
         if !status.isConnected {
             logger.info("Network lost — pausing active downloads", category: .network)
@@ -283,9 +293,9 @@ public final class DefaultDownloadManager: DownloadManaging, @unchecked Sendable
             }
         }
     }
-
+    
     // MARK: - Private: Persistence
-
+    
     private func restoreDownloads() {
         do {
             let records = try persistence.loadAll()
@@ -308,7 +318,7 @@ public final class DefaultDownloadManager: DownloadManaging, @unchecked Sendable
             logger.error("Failed to restore downloads: \(error.localizedDescription)", category: .persistence)
         }
     }
-
+    
     private func persistState() {
         let records: [DownloadRecord] = items.values.map { item in
             DownloadRecord.from(
@@ -324,26 +334,26 @@ public final class DefaultDownloadManager: DownloadManaging, @unchecked Sendable
             logger.error("Failed to persist state: \(error.localizedDescription)", category: .persistence)
         }
     }
-
+    
     // MARK: - Private: Core Operations
-
+    
     private func _startDownload(_ request: DownloadRequest) throws -> UUID {
         guard request.url.scheme?.lowercased() == "https" || request.url.scheme?.lowercased() == "http" else {
             throw DownloadError.invalidURL
         }
-
+        
         let isDuplicate = items.values.contains { $0.url == request.url && !$0.state.isTerminal }
         if isDuplicate {
             throw DownloadError.duplicateDownload(url: request.url)
         }
-
+        
         if let totalBytes = (try? diskSpaceManager.availableSpace()), totalBytes < 50_000_000 {
             logger.warning("Low disk space warning: \(ByteCountFormatter.string(fromByteCount: totalBytes, countStyle: .file)) remaining", category: .download)
         }
-
+        
         let fileName = request.fileName ?? request.url.inferredFileName
         let id = UUID()
-
+        
         let item = DownloadItem(
             id: id,
             url: request.url,
@@ -352,23 +362,23 @@ public final class DefaultDownloadManager: DownloadManaging, @unchecked Sendable
             priority: request.priority,
             createdDate: Date()
         )
-
+        
         items[id] = item
         requestMetadata[id] = (request.headers, request.expectedChecksum)
         speedTrackers[id] = SpeedTracker()
-
+        
         logger.info("Download created: \(fileName) [\(id)]", category: .download)
-
+        
         scheduleNextDownloads()
         publishUpdates()
         persistState()
-
+        
         return id
     }
-
+    
     private func _pauseDownload(id: UUID) {
         guard var item = items[id], item.state == .downloading || item.state == .queued else { return }
-
+        
         if let task = downloadIdToTask[id] {
             task.cancel(byProducingResumeData: { [weak self] data in
                 self?.queue.async {
@@ -380,33 +390,33 @@ public final class DefaultDownloadManager: DownloadManaging, @unchecked Sendable
             })
             cleanupTask(id: id, taskId: task.taskIdentifier)
         }
-
+        
         item.state = .paused
         item.downloadSpeed = 0
         item.estimatedTimeRemaining = nil
         items[id] = item
         activeCount = max(0, activeCount - 1)
-
+        
         logger.info("Paused: \(item.fileName) [\(id)]", category: .download)
         publishUpdates()
         persistState()
         scheduleNextDownloads()
     }
-
+    
     private func _resumeDownload(id: UUID) {
         guard var item = items[id], item.state == .paused || item.state == .pending || item.state == .failed else { return }
-
+        
         if activeCount >= settings.maxConcurrentDownloads {
             item.state = .queued
             items[id] = item
             publishUpdates()
             return
         }
-
+        
         item.state = .downloading
         items[id] = item
         speedTrackers[id] = SpeedTracker()
-
+        
         let task: URLSessionDownloadTask
         if let resumeData = resumeDataMap[id] {
             task = sessionClient.resumeDownloadTask(with: resumeData)
@@ -415,25 +425,25 @@ public final class DefaultDownloadManager: DownloadManaging, @unchecked Sendable
             let headers = requestMetadata[id]?.headers
             task = sessionClient.startDownloadTask(with: item.url, headers: headers)
         }
-
+        
         taskIdToDownloadId[task.taskIdentifier] = id
         downloadIdToTask[id] = task
         activeCount += 1
-
+        
         logger.info("Resumed: \(item.fileName) [\(id)]", category: .download)
         publishUpdates()
         persistState()
     }
-
+    
     private func _cancelDownload(id: UUID) {
         guard var item = items[id], !item.state.isTerminal else { return }
-
+        
         if let task = downloadIdToTask[id] {
             task.cancel()
             cleanupTask(id: id, taskId: task.taskIdentifier)
             activeCount = max(0, activeCount - 1)
         }
-
+        
         item.state = .cancelled
         item.error = .cancelled
         item.downloadSpeed = 0
@@ -441,44 +451,44 @@ public final class DefaultDownloadManager: DownloadManaging, @unchecked Sendable
         items[id] = item
         resumeDataMap[id] = nil
         pausedBySystem.remove(id)
-
+        
         logger.info("Cancelled: \(item.fileName) [\(id)]", category: .download)
         publishUpdates()
         persistState()
         finishContinuations(for: id)
         scheduleNextDownloads()
     }
-
+    
     private func _deleteDownload(id: UUID) {
         guard let item = items[id] else { return }
-
+        
         if let task = downloadIdToTask[id] {
             task.cancel()
             cleanupTask(id: id, taskId: task.taskIdentifier)
             activeCount = max(0, activeCount - 1)
         }
-
+        
         if let filePath = item.filePath {
             try? FileManager.default.removeItem(at: filePath)
         }
-
+        
         items[id] = nil
         resumeDataMap[id] = nil
         requestMetadata[id] = nil
         speedTrackers[id] = nil
         pausedBySystem.remove(id)
-
+        
         try? persistence.delete(id: id)
-
+        
         logger.info("Deleted: \(item.fileName) [\(id)]", category: .download)
         publishUpdates()
         finishContinuations(for: id)
         scheduleNextDownloads()
     }
-
+    
     private func _retryDownload(id: UUID) {
         guard var item = items[id], item.state == .failed || item.state == .cancelled else { return }
-
+        
         item.state = .pending
         item.error = nil
         item.progress = 0
@@ -488,24 +498,24 @@ public final class DefaultDownloadManager: DownloadManaging, @unchecked Sendable
         item.retryCount += 1
         items[id] = item
         resumeDataMap[id] = nil
-
+        
         logger.info("Retrying (\(item.retryCount)): \(item.fileName) [\(id)]", category: .download)
         scheduleNextDownloads()
         publishUpdates()
         persistState()
     }
-
+    
     // MARK: - Private: Scheduling
-
+    
     private func scheduleNextDownloads() {
         let maxConcurrent = settings.maxConcurrentDownloads
-
+        
         while activeCount < maxConcurrent {
             guard let next = nextQueuedItem() else { break }
             _resumeDownload(id: next.id)
         }
     }
-
+    
     private func nextQueuedItem() -> DownloadItem? {
         items.values
             .filter { $0.state == .pending || $0.state == .queued }
@@ -515,17 +525,17 @@ public final class DefaultDownloadManager: DownloadManaging, @unchecked Sendable
             }
             .first
     }
-
+    
     // MARK: - Private: Delegate Handlers
-
+    
     private func handleProgress(taskId: Int, bytesWritten: Int64, totalWritten: Int64, totalExpected: Int64) {
         guard let downloadId = taskIdToDownloadId[taskId], var item = items[downloadId] else { return }
-
+        
         let progress = totalExpected > 0 ? Double(totalWritten) / Double(totalExpected) : 0
         item.progress = progress
         item.downloadedBytes = totalWritten
         item.totalBytes = totalExpected > 0 ? totalExpected : nil
-
+        
         if let tracker = speedTrackers[downloadId] {
             tracker.update(bytesWritten: bytesWritten)
             item.downloadSpeed = tracker.currentSpeed
@@ -534,20 +544,20 @@ public final class DefaultDownloadManager: DownloadManaging, @unchecked Sendable
                 item.estimatedTimeRemaining = remaining / item.downloadSpeed
             }
         }
-
+        
         items[downloadId] = item
         publishUpdates()
         yieldToContinuations(item: item)
-
+        
         let displayOption = settings.progressDisplayOption
         if displayOption == .notification || displayOption == .both {
             Task { await notificationManager.postProgressNotification(for: item) }
         }
     }
-
+    
     private func handleFinishedDownloading(taskId: Int, location: URL, response: URLResponse?) {
         guard let downloadId = taskIdToDownloadId[taskId], var item = items[downloadId] else { return }
-
+        
         if let httpResponse = response as? HTTPURLResponse, !(200...299).contains(httpResponse.statusCode) {
             item.state = .failed
             item.error = .httpError(statusCode: httpResponse.statusCode, url: item.url)
@@ -556,9 +566,9 @@ public final class DefaultDownloadManager: DownloadManaging, @unchecked Sendable
             persistState()
             return
         }
-
+        
         item.mimeType = response?.mimeType
-
+        
         do {
             try FileManager.default.ensureDirectoryExists(at: URL.downloadsDirectory)
             let destinationURL = FileManager.default.uniqueFileURL(
@@ -566,8 +576,9 @@ public final class DefaultDownloadManager: DownloadManaging, @unchecked Sendable
                 fileName: item.fileName
             )
             try FileManager.default.moveItem(at: location, to: destinationURL)
+            try? FileManager.default.removeItem(at: location) // ✅ clean up tempCopy
             item.filePath = destinationURL
-
+            
             if let expectedChecksum = requestMetadata[downloadId]?.checksum {
                 let isValid = try checksumValidator.validate(fileURL: destinationURL, expectedChecksum: expectedChecksum)
                 if !isValid {
@@ -582,45 +593,45 @@ public final class DefaultDownloadManager: DownloadManaging, @unchecked Sendable
                     return
                 }
             }
-
+            
             item.state = .completed
             item.progress = 1.0
             item.completedDate = Date()
             item.downloadSpeed = 0
             item.estimatedTimeRemaining = nil
             items[downloadId] = item
-
+            
             logger.info("Completed: \(item.fileName) → \(destinationURL.path)", category: .download)
-
+            
             let displayOption = settings.progressDisplayOption
             if displayOption == .notification || displayOption == .both {
                 Task { await notificationManager.postCompletionNotification(for: item) }
             }
-
+            
         } catch {
             item.state = .failed
             item.error = .fileSystemError(description: error.localizedDescription)
             items[downloadId] = item
             logger.error("File move failed for \(item.fileName): \(error.localizedDescription)", category: .download)
         }
-
+        
         publishUpdates()
         persistState()
         yieldToContinuations(item: item)
         if item.state.isTerminal { finishContinuations(for: downloadId) }
     }
-
+    
     private func handleTaskComplete(taskId: Int, error: Error?) {
         guard let downloadId = taskIdToDownloadId[taskId], var item = items[downloadId] else { return }
-
+        
         cleanupTask(id: downloadId, taskId: taskId)
         activeCount = max(0, activeCount - 1)
-
+        
         if item.state == .completed || item.state == .cancelled {
             scheduleNextDownloads()
             return
         }
-
+        
         if let nsError = error as? NSError {
             if nsError.code == NSURLErrorCancelled {
                 if let resumeData = nsError.userInfo[NSURLSessionDownloadTaskResumeData] as? Data {
@@ -635,13 +646,13 @@ public final class DefaultDownloadManager: DownloadManaging, @unchecked Sendable
                 scheduleNextDownloads()
                 return
             }
-
+            
             if settings.isAutoRetryEnabled && item.retryCount < settings.maxRetryCount {
                 item.retryCount += 1
                 item.state = .pending
                 items[downloadId] = item
                 logger.warning("Scheduling retry \(item.retryCount)/\(settings.maxRetryCount) for \(item.fileName)", category: .download)
-
+                
                 let delay = retryDelay(attempt: item.retryCount)
                 DispatchQueue.global().asyncAfter(deadline: .now() + delay) { [weak self] in
                     self?.queue.async {
@@ -652,56 +663,56 @@ public final class DefaultDownloadManager: DownloadManaging, @unchecked Sendable
                 persistState()
                 return
             }
-
+            
             item.state = .failed
             item.error = .unknown(description: nsError.localizedDescription)
             item.downloadSpeed = 0
             item.estimatedTimeRemaining = nil
             items[downloadId] = item
-
+            
             let displayOption = settings.progressDisplayOption
             if displayOption == .notification || displayOption == .both {
                 Task { [item] in await notificationManager.postFailureNotification(for: item) }
             }
-
+            
             logger.error("Failed: \(item.fileName) — \(nsError.localizedDescription)", category: .download)
         }
-
+        
         publishUpdates()
         persistState()
         yieldToContinuations(item: item)
         if item.state.isTerminal { finishContinuations(for: downloadId) }
         scheduleNextDownloads()
     }
-
+    
     // MARK: - Private: Helpers
-
+    
     private func cleanupTask(id: UUID, taskId: Int) {
         taskIdToDownloadId[taskId] = nil
         downloadIdToTask[id] = nil
         speedTrackers[id] = nil
     }
-
+    
     private func retryDelay(attempt: Int) -> TimeInterval {
         min(pow(2.0, Double(attempt - 1)), 60)
     }
-
+    
     private func sortedItems() -> [DownloadItem] {
         Array(items.values).sorted { $0.createdDate > $1.createdDate }
     }
-
+    
     private func publishUpdates() {
         let sorted = sortedItems()
         _downloadsSubject.send(sorted)
     }
-
+    
     private func yieldToContinuations(item: DownloadItem) {
         guard let conts = progressContinuations[item.id] else { return }
         for cont in conts {
             cont.yield(item)
         }
     }
-
+    
     private func finishContinuations(for id: UUID) {
         guard let conts = progressContinuations.removeValue(forKey: id) else { return }
         for cont in conts {
@@ -719,13 +730,13 @@ private final class SpeedTracker {
     private(set) var currentSpeed: Double = 0
     private let smoothingFactor = 0.3
     private let minInterval: TimeInterval = 0.25
-
+    
     func update(bytesWritten: Int64) {
         accumulatedBytes += bytesWritten
         let now = Date()
         let elapsed = now.timeIntervalSince(lastUpdate)
         guard elapsed >= minInterval else { return }
-
+        
         let instantSpeed = Double(accumulatedBytes) / elapsed
         if currentSpeed == 0 {
             currentSpeed = instantSpeed
