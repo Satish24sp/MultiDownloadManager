@@ -1,0 +1,10 @@
+# Swift Package Manager
+.build/
+.swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
+Package.resolved
+
+# Xcode user data (keep scheme if shared)
+.swiftpm/xcode/xcuserdata/
+
+# macOS
+.DS_Store

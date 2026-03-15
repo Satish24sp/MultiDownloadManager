@@ -1,0 +1,119 @@
+/* Download States */
+"Pending" = "Pending";
+"Queued" = "Queued";
+"Downloading" = "Downloading";
+"Paused" = "Paused";
+"Completed" = "Completed";
+"Failed" = "Failed";
+"Cancelled" = "Cancelled";
+
+/* Download Priority */
+"High" = "High";
+"Normal" = "Normal";
+"Low" = "Low";
+
+/* Progress Display Options */
+"In-App Only" = "In-App Only";
+"Notification Only" = "Notification Only";
+"Both" = "Both";
+
+/* Tab Titles */
+"Downloads" = "Downloads";
+"Active" = "Active";
+"Settings" = "Settings";
+
+/* Screen Titles */
+"Storage Info" = "Storage Info";
+"Logs" = "Logs";
+"About" = "About";
+"New Download" = "New Download";
+"Download Manager" = "Download Manager";
+
+/* Actions */
+"Pause" = "Pause";
+"Resume" = "Resume";
+"Cancel" = "Cancel";
+"Delete" = "Delete";
+"Retry" = "Retry";
+"Download" = "Download";
+"Add Download" = "Add Download";
+"Pause All" = "Pause All";
+"Resume All" = "Resume All";
+"OK" = "OK";
+"Save" = "Save";
+
+/* Empty States */
+"No Downloads Yet" = "No Downloads Yet";
+"Tap + to add a download URL" = "Tap + to add a download URL";
+"No Active Downloads" = "No Active Downloads";
+"Active and queued downloads will appear here" = "Active and queued downloads will appear here";
+"No Completed Downloads" = "No Completed Downloads";
+"Finished downloads will appear here" = "Finished downloads will appear here";
+"No Downloads" = "No Downloads";
+"No Logs Available" = "No Logs Available";
+"Select an item from the sidebar" = "Select an item from the sidebar";
+
+/* Notifications */
+"Downloading… %d%%" = "Downloading… %d%%";
+"Download complete" = "Download complete";
+"Download failed: %@" = "Download failed: %@";
+"Unknown error" = "Unknown error";
+
+/* Settings Labels */
+"Progress Display" = "Progress Display";
+"Max Concurrent" = "Max Concurrent";
+"Auto Resume on Network" = "Auto Resume on Network";
+"Auto Retry on Failure" = "Auto Retry on Failure";
+"Max Retries" = "Max Retries";
+"Allow Cellular Downloads" = "Allow Cellular Downloads";
+"WiFi Only Mode" = "WiFi Only Mode";
+"Max Concurrent Downloads" = "Max Concurrent Downloads";
+
+/* Settings Sections */
+"Notifications" = "Notifications";
+"Performance" = "Performance";
+"Recovery" = "Recovery";
+"Network" = "Network";
+
+/* Storage */
+"Total Disk Space" = "Total Disk Space";
+"Available Space" = "Available Space";
+"Used by Downloads" = "Used by Downloads";
+"Storage" = "Storage";
+
+/* About */
+"Name" = "Name";
+"Version" = "Version";
+"Platform" = "Platform";
+"License" = "License";
+
+/* Errors */
+"Error" = "Error";
+"The download URL is invalid." = "The download URL is invalid.";
+"A download for %@ is already in progress." = "A download for %@ is already in progress.";
+"No network connection available." = "No network connection available.";
+"Server returned HTTP %d for %@." = "Server returned HTTP %d for %@.";
+"The request timed out for %@." = "The request timed out for %@.";
+"File system error: %@" = "File system error: %@";
+"Not enough disk space. Required: %@ — Available: %@" = "Not enough disk space. Required: %@ — Available: %@";
+"Resume data is invalid or corrupted. The download will restart." = "Resume data is invalid or corrupted. The download will restart.";
+"File integrity check failed. Expected: %@ — Got: %@" = "File integrity check failed. Expected: %@ — Got: %@";
+"The background download session expired." = "The background download session expired.";
+"Download failed after %d attempts for %@." = "Download failed after %d attempts for %@.";
+"The download was cancelled." = "The download was cancelled.";
+"An unexpected error occurred: %@" = "An unexpected error occurred: %@";
+
+/* Accessibility */
+"Double tap to pause" = "Double tap to pause";
+"Double tap to resume" = "Double tap to resume";
+"Double tap to retry" = "Double tap to retry";
+"%@ used by downloads out of %@ total" = "%@ used by downloads out of %@ total";
+
+/* Alert */
+"Enter the download URL" = "Enter the download URL";
+
+/* UIKit Settings */
+"Auto Resume" = "Auto Resume";
+"Auto Retry" = "Auto Retry";
+"Allow Cellular" = "Allow Cellular";
+"WiFi Only" = "WiFi Only";
