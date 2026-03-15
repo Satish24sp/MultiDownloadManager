@@ -10,13 +10,7 @@ Production-grade iOS download manager — **Swift Package** with Clean Architect
 
 ## What’s in this repo
 
-This repository contains **only** the Swift package:
-
-| Path | Description |
-|------|-------------|
-| **DownloadManagerKit/** | The Swift Package — add it to your app via SPM. |
-
-Full API and feature list: [DownloadManagerKit/README.md](DownloadManagerKit/README.md).
+This repository **is** the Swift package. `Package.swift` is at the root so SPM can resolve it from the repo URL. The library product name is **DownloadManagerKit**.
 
 ---
 
@@ -114,7 +108,7 @@ let id = try await container.downloadManager.startDownload(request)
 
 For detailed steps (notifications, settings, error handling, checksums, retries, and troubleshooting), see:
 
-**[DownloadManagerKit/INTEGRATION.md](DownloadManagerKit/INTEGRATION.md)**
+**[INTEGRATION.md](INTEGRATION.md)**
 
 ---
 
@@ -154,4 +148,4 @@ To host the package on GitHub:
 
 ## License
 
-MIT License — see [DownloadManagerKit/LICENSE](DownloadManagerKit/LICENSE).
+MIT License — see [LICENSE](LICENSE).
