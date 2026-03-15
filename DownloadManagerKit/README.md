@@ -363,7 +363,7 @@ swift test
 
 ## Repository
 
-This package is part of [MultiDownloadManager](https://github.com/Satish24sp/MultiDownloadManager). Add the **root repository URL** in Xcode or SPM; the library target is `DownloadManagerKit`.
+This package is part of [MultiDownloadManager](https://github.com/Satish24sp/MultiDownloadManager). Add the **root repository URL** in Xcode or SPM; the library target is `DownloadManagerKit`. A standalone demo app (not in the repo) is described in the main repository README.
 
 ## License
 

@@ -66,3 +66,6 @@ playground.xcworkspace
 # App packaging
 *.mobileprovision
 *.p12
+
+# Standalone demo app (not part of the published package repo)
+MultiDownloadManager-Demo/

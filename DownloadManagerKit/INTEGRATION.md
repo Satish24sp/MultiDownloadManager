@@ -1,6 +1,6 @@
 # DownloadManagerKit — Integration Guide
 
-Detailed step-by-step guide for integrating DownloadManagerKit into your iOS app.
+Step-by-step guide for integrating DownloadManagerKit into your iOS app. A standalone demo app (separate from this repo) is available; see the main repository README.
 
 ---
 

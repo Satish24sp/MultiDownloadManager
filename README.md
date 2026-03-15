@@ -1,6 +1,6 @@
 # MultiDownloadManager
 
-A production-grade iOS download manager — **Swift Package** with Clean Architecture, protocol-oriented design, and full SwiftUI + UIKit support. Built for reliability at scale.
+Production-grade iOS download manager — **Swift Package** with Clean Architecture, protocol-oriented design, and full SwiftUI + UIKit support.
 
 [![Swift 5.9+](https://img.shields.io/badge/Swift-5.9+-orange.svg)](https://swift.org)
 [![iOS 15.0+](https://img.shields.io/badge/iOS-15.0+-blue.svg)](https://developer.apple.com/ios/)
@@ -8,28 +8,32 @@ A production-grade iOS download manager — **Swift Package** with Clean Archite
 
 ---
 
-## Repository structure
+## What’s in this repo
+
+This repository contains **only** the Swift package:
 
 | Path | Description |
 |------|-------------|
-| **DownloadManagerKit/** | Swift Package — core library. Add via SPM to your app. |
-| **DemoApp/** | Sample Xcode app (SwiftUI + UIKit) demonstrating integration. |
+| **DownloadManagerKit/** | The Swift Package — add it to your app via SPM. |
 
-The main deliverable is **DownloadManagerKit**. See [DownloadManagerKit/README.md](DownloadManagerKit/README.md) for features, installation, and API usage.
+Full API and feature list: [DownloadManagerKit/README.md](DownloadManagerKit/README.md).
 
 ---
 
-## Quick start
+## Step-by-step integration
 
-### Add via Swift Package Manager
+### Step 1 — Add the package
 
-**Xcode:** File → Add Package Dependencies → paste:
+**In Xcode**
 
-```
-https://github.com/Satish24sp/MultiDownloadManager.git
-```
+1. Open your project in Xcode 15+.
+2. **File → Add Package Dependencies…**
+3. Enter the URL:  
+   `https://github.com/Satish24sp/MultiDownloadManager.git`
+4. Set **Dependency Rule** to **Up to Next Major Version** with minimum `1.0.0`.
+5. Click **Add Package**, then add the **DownloadManagerKit** library to your app target.
 
-**Package.swift:**
+**In Package.swift**
 
 ```swift
 dependencies: [
@@ -37,44 +41,104 @@ dependencies: [
 ]
 ```
 
-Then add the library to your target: `dependencies: ["DownloadManagerKit"]`.
-
-### Run the demo
-
-1. Open `DemoApp/DemoApp.xcodeproj` in Xcode.
-2. The app uses **DownloadManagerKit** via SPM from this GitHub repo (see [Hosting on GitHub](#hosting-on-github) if you haven’t pushed yet).
-3. Select a simulator or device (iOS 15+), then Build and run (⌘R).
+Add to your target: `dependencies: ["DownloadManagerKit"]`.
 
 ---
 
-## Hosting on GitHub
+### Step 2 — App setup
 
-DemoApp is configured to depend on this repository via SPM. To publish and use it:
+**SwiftUI**
 
-1. **Create the repo on GitHub**  
-   Go to [github.com/new](https://github.com/new), name it `MultiDownloadManager`, leave it empty (no README/license), and copy the repo URL.
+```swift
+import SwiftUI
+import DownloadManagerKit
 
-2. **Initialize and push from your machine:**
+@main
+struct MyApp: App {
+    @State private var container: DependencyContainer?
+
+    var body: some Scene {
+        WindowGroup {
+            if let container {
+                SidebarNavigationView(viewModel: DownloadViewModel(container: container))
+            } else {
+                ProgressView("Loading…")
+                    .task { container = await DependencyContainer.create() }
+            }
+        }
+    }
+}
+```
+
+**UIKit**
+
+Create the container in your `SceneDelegate` (or `AppDelegate`), then set the root view controller to `DownloadsTabBarController(container: container)`.
+
+---
+
+### Step 3 — Background downloads (optional)
+
+1. In your app target: **Signing & Capabilities → + Capability → Background Modes** → enable **Background fetch**.
+2. In **AppDelegate**, implement:
+
+```swift
+func application(
+    _ application: UIApplication,
+    handleEventsForBackgroundURLSession identifier: String,
+    completionHandler: @escaping () -> Void
+) {
+    BackgroundSessionHandler.shared.handleBackgroundSession(
+        identifier: identifier,
+        completionHandler: completionHandler,
+        downloadManager: container?.downloadManager as? DefaultDownloadManager
+    )
+}
+```
+
+---
+
+### Step 4 — Start a download
+
+```swift
+let request = DownloadRequest(
+    url: URL(string: "https://example.com/file.zip")!,
+    fileName: "file.zip",
+    priority: .high
+)
+let id = try await container.downloadManager.startDownload(request)
+```
+
+---
+
+## Full integration guide
+
+For detailed steps (notifications, settings, error handling, checksums, retries, and troubleshooting), see:
+
+**[DownloadManagerKit/INTEGRATION.md](DownloadManagerKit/INTEGRATION.md)**
+
+---
+
+## Demo app (separate, not in repo)
+
+A **standalone demo app** that uses this package via SPM lives in the `MultiDownloadManager-Demo` folder (same directory as this repo; the folder is not published to GitHub). To run it: open `MultiDownloadManager-Demo/DemoApp.xcodeproj`, resolve packages, then build and run. See `MultiDownloadManager-Demo/README.md` for details.
+
+---
+
+## Publishing this repo
+
+To host the package on GitHub:
+
+1. Create a new **public** or **private** repository named `MultiDownloadManager` (empty, no README).
+2. Push and tag:
 
    ```bash
-   cd /path/to/MultiDownloadManager
-   git init
-   git add .
-   git commit -m "Initial commit: DownloadManagerKit + DemoApp"
-   git branch -M main
    git remote add origin https://github.com/Satish24sp/MultiDownloadManager.git
    git push -u origin main
-   ```
-
-3. **Create a version tag** (required for SPM “from: 1.0.0”):
-
-   ```bash
    git tag 1.0.0
    git push origin 1.0.0
    ```
 
-4. **Open DemoApp in Xcode**  
-   File → Packages → Reset Package Caches (if needed), then build. Xcode will resolve **DownloadManagerKit** from the GitHub repo.
+3. For a **private** repo, add your GitHub account (or PAT) in Xcode → Settings → Accounts so SPM can resolve the package.
 
 ---
 
@@ -90,4 +154,4 @@ DemoApp is configured to depend on this repository via SPM. To publish and use i
 
 ## License
 
-This project is licensed under the MIT License — see [DownloadManagerKit/LICENSE](DownloadManagerKit/LICENSE) for details.
+MIT License — see [DownloadManagerKit/LICENSE](DownloadManagerKit/LICENSE).
